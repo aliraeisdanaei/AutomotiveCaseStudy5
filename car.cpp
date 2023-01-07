@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <string>
@@ -22,14 +23,16 @@ void Car::accelerate(double rate, bool forward, bool brake, double max,
     double accel = forward ? max * rate : -1 * max * rate;
     double new_speed = this->speed + accel * accel_time;
     if (!brake) {
-      this->speed = new_speed;
+      if (abs(new_speed) < this->max_speed) {
+        this->speed = new_speed;
+      }
     } else {
 
       // make sure the brake stops the speed to 0
       if (forward) {
-        this->speed = new_speed < 0 ? 0 : new_speed;
-      } else {
         this->speed = new_speed > 0 ? 0 : new_speed;
+      } else {
+        this->speed = new_speed < 0 ? 0 : new_speed;
       }
     }
   }

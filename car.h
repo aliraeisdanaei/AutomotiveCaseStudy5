@@ -13,9 +13,8 @@ private:
   double speed = 0;
   bool on = false;
 
-  // tranision modes
-  // 0 park, 1 neutral, 2 drive, 3 reverse
-  int transition_mode = 0;
+  // tranision modes p, n, d, r
+  char transition_mode = 'p';
 
   // acceleration taken as reference from
   // https://copradar.com/chapts/references/acceleration.html
@@ -48,25 +47,25 @@ public:
 
   int get_year() { return this->year; }
 
-  int get_transmission_mode() { return this->transition_mode; }
+  char get_transmission_mode() { return this->transition_mode; }
+
+  bool get_on() { return this->on; }
 
   void give_gas(double gas_power) {
     const double accel_time = 0.5;
-    bool forward;
-    if (this->transition_mode == 2) {
-      forward = true;
-    } else if (this->transition_mode == 3) {
-      forward = false;
+    if (this->transition_mode == 'd') {
+      accelerate(gas_power, true, false, this->max_acc, accel_time);
+    } else if (this->transition_mode == 'r') {
+      accelerate(gas_power, false, false, this->max_acc, accel_time);
     } else {
       give_warning(
           "You cannot give gas when you are not in drive or in reverse");
     }
-    accelerate(gas_power, forward, false, this->max_acc, accel_time);
   }
 
   void brake(double brake_power) {
     const double brake_time = 0.5;
-    bool forward = this->transition_mode == 2 ? true : false;
+    bool forward = this->transition_mode == 'd' ? false : true;
     accelerate(brake_power, forward, true, this->max_break_acc, brake_time);
   }
 
@@ -93,7 +92,7 @@ public:
     if (this->speed != 0) {
       string warning = "Cannot turn off car when speed is greater than 0";
       give_warning(warning);
-    } else if (this->transition_mode != 0) {
+    } else if (this->transition_mode != 'p') {
       give_warning("You cannot turn off the car when you are not in park");
     } else {
       this->on = false;
