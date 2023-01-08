@@ -13,15 +13,7 @@ using namespace std;
 
 #include "car.h"
 
-void write_driving_parameters(Car *car) {
-  system("clear");
-  cout << "On: " << car->get_on() << '\n';
-  cout << "Speed: " << car->get_speed() << '\n';
-  cout << "Transmission: " << car->get_transmission_mode() << '\n';
-  // sleep(1);
-}
-
-void driving_input(Car *car) {
+void disable_terminal() {
   struct termios info;
 
   /* get current terminal attirbutes; 0 is the file descriptor for stdin */
@@ -30,8 +22,20 @@ void driving_input(Car *car) {
   info.c_cc[VMIN] = 1;     /* wait until at least one keystroke available */
   info.c_cc[VTIME] = 0;    /* no timeout */
   tcsetattr(0, TCSANOW, &info); /* set immediately */
+}
 
-  write_driving_parameters(car);
+void static_move_car(Car *car) { car->move_car(); }
+void static_write_car(Car *car) {
+  while (true) {
+    car->write_car(true);
+  }
+}
+
+void driving_input(Car *car) {
+  disable_terminal();
+
+  thread move_thread(static_move_car, car);
+  thread write_thread(static_write_car, car);
 
   char input;
   while ((input = getchar()) != 27 /* ascii ESC */) {
@@ -65,8 +69,12 @@ void driving_input(Car *car) {
       case 'r':
         car->change_transmission('r');
         break;
+      case 'c':
+        car->toggle_cruise_control();
+        break;
       case ' ':
         car->brake(1);
+        break;
 
       default:
         if ('1' <= input && input <= '9') {
@@ -77,9 +85,10 @@ void driving_input(Car *car) {
         }
       }
     }
-
-    write_driving_parameters(car);
   }
+
+  move_thread.detach();
+  write_thread.detach();
 }
 
 void start_car(Car *car) { car->start(); }
