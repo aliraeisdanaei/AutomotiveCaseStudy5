@@ -1,9 +1,15 @@
 #include <chrono>
+#include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <thread>
 #include <unistd.h>
+
+#ifndef SPEAKER
+#define SPEAKER
+#endif
 
 #ifndef CAR
 #define CAR
@@ -35,7 +41,11 @@ private:
   const double max_speed = 69.5;
 
   double position_x = 0;
-  double obstacle_position = 5000;
+  double obstacle_position = 700;
+
+  // buffer time in seconds of buffer between current stoping capability to
+  // obstacle
+  const double obstacle_buffer_time = 4;
 
   string model;
   int year;
@@ -80,10 +90,21 @@ public:
                this->determine_drag_acc(), unit_time_sec);
   }
 
+  static void driver_assist(Car *car) {
+    while (true) {
+      if (car->close_obstacle()) {
+        car->cruise_control_on = false;
+        give_warning("Obstacle dangerously close. Brake now.");
+      }
+    }
+  }
+
   void move_car() {
+    thread driver_assist_thread(driver_assist, this);
     while (true) {
       const double unit_time_sec = 5.0 / 1000;
       while (true) {
+
         this->position_x += this->speed * unit_time_sec;
         this_thread::sleep_for(
             chrono::milliseconds((int)(unit_time_sec * 1000)));
@@ -95,8 +116,31 @@ public:
         if (this->cruise_control_on) {
           apply_cruise_control(unit_time_sec);
         }
+
+        if (collided()) {
+          this->speed = 0;
+          give_warning("You have crashed");
+          break;
+        }
       }
     }
+    driver_assist_thread.detach();
+  }
+
+  bool collided() { return this->get_dist_obstacle() < 0; }
+
+  bool close_obstacle() {
+    double dist = this->get_dist_obstacle();
+    const double buffer_dist = this->obstacle_buffer_time * this->speed;
+    dist -= buffer_dist;
+
+    // kinematic formula for distance travelled given acceleration
+    // v^2 = v0^2 + 2a * disp
+    // distance needed to stop
+    // float break_coeff = this->deterimine_dir_travel() ? -1 : 1;
+    double dist_needed =
+        abs((0 - this->speed * this->speed) / (2 * this->max_break_acc));
+    return dist_needed > dist;
   }
 
   void give_gas(double gas_power) {
@@ -154,9 +198,18 @@ public:
     return this->on;
   }
 
-  bool give_warning(string warning) {
-    cout << warning << '\n';
-    return true;
+#ifdef SPEAKER
+  static void speaker_warning(string warning_msg) {
+    string espeak_cmd = "espeak \'warning " + warning_msg + '\'';
+    system(espeak_cmd.c_str());
+  }
+#endif
+
+  static void give_warning(string warning_msg) {
+    // cout << warning_msg << '\n';
+#ifdef SPEAKER
+    speaker_warning(warning_msg);
+#endif
   }
 
   void write_car(bool clear) {
