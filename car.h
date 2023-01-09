@@ -50,7 +50,6 @@ private:
   string model;
   int year;
 
-  static double mpsec_to_kmph(double mpsec);
   void accelerate(double rate, bool forward, bool brake, double max,
                   double accel_time);
   bool deterimine_dir_travel();
@@ -63,6 +62,8 @@ public:
   }
 
   ~Car() {}
+
+  static double mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
 
   double get_speed() { return mpsec_to_kmph(this->speed); }
 
