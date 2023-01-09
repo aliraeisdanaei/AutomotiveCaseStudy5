@@ -7,8 +7,6 @@
 #include <thread>
 #include <unistd.h>
 
-#define MYCAR gmc
-
 using namespace std;
 
 #include "car.h"
@@ -24,8 +22,7 @@ void disable_terminal() {
   tcsetattr(0, TCSANOW, &info); /* set immediately */
 }
 
-void static_move_car(Car *car) { car->move_car(); }
-void static_write_car(Car *car) {
+void const_write_car(Car *car) {
   while (true) {
     car->write_car(true);
   }
@@ -34,8 +31,8 @@ void static_write_car(Car *car) {
 void driving_input(Car *car) {
   disable_terminal();
 
-  thread move_thread(static_move_car, car);
-  thread write_thread(static_write_car, car);
+  thread move_thread(Car::static_move_car, car);
+  thread write_thread(const_write_car, car);
 
   char input;
   while ((input = getchar()) != 27 /* ascii ESC */) {

@@ -50,7 +50,7 @@ private:
   string model;
   int year;
 
-  double mpsec_to_kmph(double mpsec);
+  static double mpsec_to_kmph(double mpsec);
   void accelerate(double rate, bool forward, bool brake, double max,
                   double accel_time);
   bool deterimine_dir_travel();
@@ -125,6 +125,10 @@ public:
       }
     }
     driver_assist_thread.detach();
+  }
+
+  static void static_move_car(Car * car){
+    car->move_car();
   }
 
   bool collided() { return this->get_dist_obstacle() < 0; }

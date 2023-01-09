@@ -7,7 +7,7 @@
 
 using namespace std;
 
-double Car::mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
+static double mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
 
 /**
  * double rate (0, 1] the level of power to accelarate the car forward for
