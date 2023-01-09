@@ -7,10 +7,6 @@
 #include <thread>
 #include <unistd.h>
 
-#ifndef SPEAKER
-#define SPEAKER
-#endif
-
 #ifndef CAR
 #define CAR
 
@@ -208,12 +204,13 @@ public:
     string espeak_cmd = "espeak \'warning " + warning_msg + '\'';
     system(espeak_cmd.c_str());
   }
+
 #endif
 
   static void give_warning(string warning_msg) {
     // cout << warning_msg << '\n';
 #ifdef SPEAKER
-    speaker_warning(warning_msg);
+    give_speaker_warning(warning_msg);
 #endif
   }
 
