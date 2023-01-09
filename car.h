@@ -10,6 +10,8 @@
 #ifndef CAR
 #define CAR
 
+#include "speaker.h"
+
 using namespace std;
 
 class Car {
@@ -51,13 +53,21 @@ private:
   bool deterimine_dir_travel();
   double determine_drag_acc();
 
+  #ifdef SPEAKER
+    Speaker *speaker;
+  #endif
+
 public:
   Car(string model, int year) {
     this->model = model;
     this->year = year;
   }
 
-  ~Car() {}
+  ~Car() {
+    #ifdef SPEAKER
+      delete speaker;
+    #endif
+  }
 
   static double mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
 
@@ -91,7 +101,7 @@ public:
     while (true) {
       if (car->close_obstacle()) {
         car->cruise_control_on = false;
-        give_warning("Obstacle dangerously close. Brake now.");
+        car->give_warning("Obstacle dangerously close. Brake now.");
       }
     }
   }
@@ -199,19 +209,21 @@ public:
     return this->on;
   }
 
-#ifdef SPEAKER
-  static void speaker_warning(string warning_msg) {
-    string espeak_cmd = "espeak \'warning " + warning_msg + '\'';
-    system(espeak_cmd.c_str());
-  }
+// #ifdef SPEAKER
+//   static void speaker_warning(string warning_msg) {
+//     string espeak_cmd = "espeak \'warning " + warning_msg + '\'';
+//     system(espeak_cmd.c_str());
+//   }
 
-#endif
+// #endif
 
-  static void give_warning(string warning_msg) {
+  void give_warning(string warning_msg) {
     // cout << warning_msg << '\n';
-#ifdef SPEAKER
-    give_speaker_warning(warning_msg);
-#endif
+  #ifdef SPEAKER
+    // give_speaker_warning(warning_msg);
+    Speaker_Use* audio_warning =  new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning);
+    this->speaker->add_use(audio_warning);
+  #endif
   }
 
   void write_car(bool clear) {
