@@ -220,10 +220,8 @@ public:
     // cout << warning_msg << '\n';
 #ifdef SPEAKER
     // give_speaker_warning(warning_msg);
-    cout << "Trying to creat Speaker Use" << '\n';
     Speaker_Use *audio_warning =
         new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning);
-    cout << "Created Speaker Use" << '\n';
     this->speaker->add_use(audio_warning);
 #endif
   }

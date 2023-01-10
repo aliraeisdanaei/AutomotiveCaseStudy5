@@ -25,7 +25,7 @@ void disable_terminal() {
 void const_write_car(Car *car) {
   while (true) {
     car->write_car(true);
-    sleep(2);
+    sleep(1);
   }
 }
 

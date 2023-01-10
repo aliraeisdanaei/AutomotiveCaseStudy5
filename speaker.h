@@ -2,6 +2,7 @@
 #include <list>
 #include <string>
 #include <thread>
+#include <unistd.h>
 
 using namespace std;
 
@@ -41,11 +42,7 @@ private:
   thread *current_use_thread = (thread *)malloc(sizeof(thread));
 
 public:
-  Speaker() {
-    cout << "Created Speaker" << '\n';
-    this->empty = true;
-    cout << "Created Speaker" << '\n';
-  }
+  Speaker() { this->empty = true; }
 
   ~Speaker() {
     delete this->current_use;
@@ -53,28 +50,37 @@ public:
   }
 
   bool add_use(Speaker_Use *use) {
+    cout << "Add use " << use->get_name() << '\n';
     if (this->empty) {
       use_func_type use_func = use->get_use_func();
       string use_name = use->get_name();
       this->empty = false;
-      //   this->current_use_thread = &(thread(use_func, use_name));
-      //   this->current_use_thread.join();
+      thread tmp_thread = (thread(use_func, use_name));
+      this->current_use_thread = &tmp_thread;
+      this->current_use_thread->join();
       this->empty = true;
       return true;
     } else {
       if (use->get_critical_priority()) {
         // critical use
-        if (current_use->get_critical_priority()) {
-          // wait for the other to finish
-          //   this->current_use_thread.join();
+        if (this->current_use->get_critical_priority()) {
+          if (this->current_use->get_name() == use->get_name()) {
+            // we are trying to give the same warning
+            sleep(5);
+            return false;
+          } else {
+            // wait for the other to finish
+            this->current_use_thread->join();
 
-          use_func_type use_func = use->get_use_func();
-          string use_name = use->get_name();
-          this->empty = false;
-          //   this->current_use_thread = thread(use_func, use_name);
-          //   this->current_use_thread.join();
-          this->empty = true;
-          return true;
+            use_func_type use_func = use->get_use_func();
+            string use_name = use->get_name();
+            this->empty = false;
+            thread tmp_thread = (thread(use_func, use_name));
+            this->current_use_thread = &tmp_thread;
+            this->current_use_thread->join();
+            this->empty = true;
+            return true;
+          }
         }
       } else {
         // non-critical use
@@ -83,13 +89,14 @@ public:
           return false;
         } else {
           // replaces the other use
-          //   this->current_use_thread.detach();
+          this->current_use_thread->detach();
 
           use_func_type use_func = use->get_use_func();
           string use_name = use->get_name();
           this->empty = false;
-          //   this->current_use_thread = thread(use_func, use_name);
-          //   this->current_use_thread.join();
+          thread tmp_thread = (thread(use_func, use_name));
+          this->current_use_thread = &tmp_thread;
+          this->current_use_thread->join();
           this->empty = true;
           return true;
         }
