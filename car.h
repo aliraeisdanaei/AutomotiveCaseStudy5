@@ -53,9 +53,10 @@ private:
   bool deterimine_dir_travel();
   double determine_drag_acc();
 
-  #ifdef SPEAKER
-    Speaker *speaker;
-  #endif
+#ifdef SPEAKER
+  // Speaker *speaker = (Speaker *)malloc(sizeof(Speaker));
+  Speaker *speaker = new Speaker();
+#endif
 
 public:
   Car(string model, int year) {
@@ -64,9 +65,9 @@ public:
   }
 
   ~Car() {
-    #ifdef SPEAKER
-      delete speaker;
-    #endif
+#ifdef SPEAKER
+    delete speaker;
+#endif
   }
 
   static double mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
@@ -134,9 +135,7 @@ public:
     driver_assist_thread.detach();
   }
 
-  static void static_move_car(Car * car){
-    car->move_car();
-  }
+  static void static_move_car(Car *car) { car->move_car(); }
 
   bool collided() { return this->get_dist_obstacle() < 0; }
 
@@ -209,21 +208,24 @@ public:
     return this->on;
   }
 
-// #ifdef SPEAKER
-//   static void speaker_warning(string warning_msg) {
-//     string espeak_cmd = "espeak \'warning " + warning_msg + '\'';
-//     system(espeak_cmd.c_str());
-//   }
+  // #ifdef SPEAKER
+  //   static void speaker_warning(string warning_msg) {
+  //     string espeak_cmd = "espeak \'warning " + warning_msg + '\'';
+  //     system(espeak_cmd.c_str());
+  //   }
 
-// #endif
+  // #endif
 
   void give_warning(string warning_msg) {
     // cout << warning_msg << '\n';
-  #ifdef SPEAKER
+#ifdef SPEAKER
     // give_speaker_warning(warning_msg);
-    Speaker_Use* audio_warning =  new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning);
+    cout << "Trying to creat Speaker Use" << '\n';
+    Speaker_Use *audio_warning =
+        new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning);
+    cout << "Created Speaker Use" << '\n';
     this->speaker->add_use(audio_warning);
-  #endif
+#endif
   }
 
   void write_car(bool clear) {
