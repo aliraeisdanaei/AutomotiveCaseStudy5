@@ -5,6 +5,8 @@
 #include <thread>
 #include <unistd.h>
 
+#include "../configuration.h"
+
 // #include "speaker.h"
 // #include "../configuration.h"
 

@@ -9,10 +9,7 @@
 // #define SPEAKER
 // #endif
 
-#ifndef SPEAKER
-#define SPEAKER
 #include "../configuration.h"
-#endif
 
 #include "speaker_use.h"
 
