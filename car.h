@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -99,7 +100,7 @@ public:
   }
 
   static void driver_assist(Car *car) {
-    while (true) {
+    while (!car->collided()) {
       if (car->close_obstacle()) {
         car->cruise_control_on = false;
         car->give_warning("Obstacle dangerously close. Brake now.");
@@ -109,27 +110,24 @@ public:
 
   void move_car() {
     thread driver_assist_thread(driver_assist, this);
-    while (true) {
+    while (!this->collided()) {
       const double unit_time_sec = 5.0 / 1000;
-      while (true) {
 
-        this->position_x += this->speed * unit_time_sec;
-        this_thread::sleep_for(
-            chrono::milliseconds((int)(unit_time_sec * 1000)));
+      this->position_x += this->speed * unit_time_sec;
+      this_thread::sleep_for(chrono::milliseconds((int)(unit_time_sec * 1000)));
 
-        // apply drag to the car
-        accelerate(1, this->deterimine_dir_travel(), true, this->drag_acc,
-                   unit_time_sec);
+      // apply drag to the car
+      accelerate(1, this->deterimine_dir_travel(), true, this->drag_acc,
+                 unit_time_sec);
 
-        if (this->cruise_control_on) {
-          apply_cruise_control(unit_time_sec);
-        }
+      if (this->cruise_control_on) {
+        apply_cruise_control(unit_time_sec);
+      }
 
-        if (collided()) {
-          this->speed = 0;
-          give_warning("You have crashed");
-          break;
-        }
+      if (collided()) {
+        this->speed = 0;
+        give_warning("You have crashed");
+        break;
       }
     }
     driver_assist_thread.detach();

@@ -37,68 +37,54 @@ public:
 
 class Speaker {
 private:
-  bool empty;
+  // true iff locked
+  bool lock;
   Speaker_Use *current_use = (Speaker_Use *)malloc(sizeof(Speaker_Use));
   thread *current_use_thread = (thread *)malloc(sizeof(thread));
 
 public:
-  Speaker() { this->empty = true; }
+  Speaker() { this->lock = false; }
 
   ~Speaker() {
     delete this->current_use;
     delete this->current_use_thread;
   }
 
+  void set_current_use(Speaker_Use *use) {
+    this->current_use = use;
+
+    use_func_type use_func = use->get_use_func();
+    string use_name = use->get_name();
+    thread tmp_thread = (thread(use_func, use_name));
+    this->current_use_thread = &tmp_thread;
+    this->current_use_thread->join();
+  }
+
   bool add_use(Speaker_Use *use) {
-    cout << "Add use " << use->get_name() << '\n';
-    if (this->empty) {
-      use_func_type use_func = use->get_use_func();
-      string use_name = use->get_name();
-      this->empty = false;
-      thread tmp_thread = (thread(use_func, use_name));
-      this->current_use_thread = &tmp_thread;
-      this->current_use_thread->join();
-      this->empty = true;
+    cout << "Add use++ " << use->get_name() << endl;
+    if (!this->lock) {
+      // no lock is on
+
+      // only close lock when critical priority
+      this->lock = use->get_critical_priority() ? true : false;
+      this->set_current_use(use);
+      this->lock = false;
       return true;
     } else {
+      // lock is on
+
       if (use->get_critical_priority()) {
         // critical use
-        if (this->current_use->get_critical_priority()) {
-          if (this->current_use->get_name() == use->get_name()) {
-            // we are trying to give the same warning
-            sleep(5);
-            return false;
-          } else {
-            // wait for the other to finish
-            this->current_use_thread->join();
-
-            use_func_type use_func = use->get_use_func();
-            string use_name = use->get_name();
-            this->empty = false;
-            thread tmp_thread = (thread(use_func, use_name));
-            this->current_use_thread = &tmp_thread;
-            this->current_use_thread->join();
-            this->empty = true;
-            return true;
-          }
-        }
-      } else {
-        // non-critical use
-        if (current_use->get_critical_priority()) {
-          // cannot be played
+        cout << "both critical" << '\n';
+        if (this->current_use->get_name() == use->get_name()) {
+          // we are trying to give the same warning
+          // cout << "Not allowed ";
           return false;
         } else {
-          // replaces the other use
-          this->current_use_thread->detach();
-
-          use_func_type use_func = use->get_use_func();
-          string use_name = use->get_name();
-          this->empty = false;
-          thread tmp_thread = (thread(use_func, use_name));
-          this->current_use_thread = &tmp_thread;
-          this->current_use_thread->join();
-          this->empty = true;
-          return true;
+          // wait for the other to finish
+          cout << "waiting for the other one" << endl;
+          sleep(1);
+          return add_use(use);
         }
       }
     }
