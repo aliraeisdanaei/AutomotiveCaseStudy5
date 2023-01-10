@@ -10,8 +10,19 @@
 
 #ifndef CAR
 #define CAR
+#endif
 
-#include "speaker.h"
+#include "configuration.h"
+
+#ifdef SPEAKER
+// class Speaker;
+#include "Speaker/speaker.h"
+#endif
+
+#ifdef COLLISION_CONTROL
+// class Collision_Control;
+#include "Driver_Assist/collision_control.h"
+#endif
 
 using namespace std;
 
@@ -26,25 +37,7 @@ private:
   // tranision modes p, n, d, r
   char transition_mode = 'p';
 
-  // acceleration taken as reference from
-  // https://copradar.com/chapts/references/acceleration.html
-  const double max_break_acc = 9.8;
-
-  // 100 km in 5 sec --> 20km in 1 sec acceleration
-  const double max_acc = 5.6;
-
-  // just took a gues
-  const double drag_acc = 1.2;
-
-  // max speed 250 kmph --> 69.445mps
-  const double max_speed = 69.5;
-
   double position_x = 0;
-  double obstacle_position = 700;
-
-  // buffer time in seconds of buffer between current stoping capability to
-  // obstacle
-  const double obstacle_buffer_time = 4;
 
   string model;
   int year;
@@ -59,7 +52,24 @@ private:
   Speaker *speaker = new Speaker();
 #endif
 
+#ifdef COLLISION_CONTROL
+  Collision_Control *collision_control = new Collision_Control();
+#endif
+
 public:
+  // acceleration taken as reference from
+  // https://copradar.com/chapts/references/acceleration.html
+  const double max_break_acc = 9.8;
+
+  // 100 km in 5 sec --> 20km in 1 sec acceleration
+  const double max_acc = 5.6;
+
+  // just took a gues
+  const double drag_acc = 1.2;
+
+  // max speed 250 kmph --> 69.445mps
+  const double max_speed = 69.5;
+
   Car(string model, int year) {
     this->model = model;
     this->year = year;
@@ -99,15 +109,6 @@ public:
                this->determine_drag_acc(), unit_time_sec);
   }
 
-  static void driver_assist(Car *car) {
-    while (!car->collided()) {
-      if (car->close_obstacle()) {
-        car->cruise_control_on = false;
-        car->give_warning("Obstacle dangerously close. Brake now.");
-      }
-    }
-  }
-
   void move_car() {
     thread driver_assist_thread(driver_assist, this);
     while (!this->collided()) {
@@ -124,7 +125,7 @@ public:
         apply_cruise_control(unit_time_sec);
       }
 
-      if (collided()) {
+      if (this->collided()) {
         this->speed = 0;
         give_warning("You have crashed");
         break;
@@ -134,22 +135,6 @@ public:
   }
 
   static void static_move_car(Car *car) { car->move_car(); }
-
-  bool collided() { return this->get_dist_obstacle() < 0; }
-
-  bool close_obstacle() {
-    double dist = this->get_dist_obstacle();
-    const double buffer_dist = this->obstacle_buffer_time * this->speed;
-    dist -= buffer_dist;
-
-    // kinematic formula for distance travelled given acceleration
-    // v^2 = v0^2 + 2a * disp
-    // distance needed to stop
-    // float break_coeff = this->deterimine_dir_travel() ? -1 : 1;
-    double dist_needed =
-        abs((0 - this->speed * this->speed) / (2 * this->max_break_acc));
-    return dist_needed > dist;
-  }
 
   void give_gas(double gas_power) {
     const double accel_time = 0.5;
@@ -185,10 +170,6 @@ public:
     return this->transition_mode;
   }
 
-  double get_dist_obstacle() {
-    return this->obstacle_position - this->position_x;
-  }
-
   bool start() {
     this->on = true;
     return this->on;
@@ -219,7 +200,8 @@ public:
 #ifdef SPEAKER
     // give_speaker_warning(warning_msg);
     Speaker_Use *audio_warning =
-        new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning);
+        new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning,
+                        &Speaker_Use::kill_speaker_warning);
     this->speaker->add_use(audio_warning);
 #endif
   }
@@ -240,5 +222,3 @@ public:
          << "meters" << '\n';
   }
 };
-
-#endif
