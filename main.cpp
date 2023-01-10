@@ -68,7 +68,7 @@ void driving_input(Car *car) {
         car->change_transmission('r');
         break;
       case 'c':
-        car->toggle_cruise_control();
+        // car->toggle_cruise_control();
         break;
       case ' ':
         car->brake(1);

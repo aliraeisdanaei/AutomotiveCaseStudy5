@@ -8,20 +8,21 @@
 #include <thread>
 #include <unistd.h>
 
+#include "configuration.h"
 #ifndef CAR
 #define CAR
 #endif
 
-#include "configuration.h"
-
 #ifdef SPEAKER
-// class Speaker;
 #include "Speaker/speaker.h"
 #endif
 
 #ifdef COLLISION_CONTROL
-// class Collision_Control;
 #include "Driver_Assist/collision_control.h"
+#endif
+
+#ifdef CRUISE_CONTROL
+#include "Driver_Assist/cruise_control.h"
 #endif
 
 using namespace std;
@@ -31,16 +32,17 @@ private:
   // all internal units are in meters per second
   double speed = 0;
   bool on = false;
-
-  bool cruise_control_on = false;
-
   // tranision modes p, n, d, r
   char transition_mode = 'p';
-
   double position_x = 0;
-
   string model;
   int year;
+
+  static constexpr double unit_time_sec = 5.0 / 1000;
+  const double max_break_acc = 9.8;
+  const double max_acc = 5.6; // 100 km in 5 sec --> 20km in 1 sec acceleration
+  const double max_speed = 69.5; // max speed 250 kmph --> 69.445mps
+  static constexpr double drag_acc = 1.2;
 
   void accelerate(double rate, bool forward, bool brake, double max,
                   double accel_time);
@@ -56,20 +58,44 @@ private:
   Collision_Control *collision_control = new Collision_Control();
 #endif
 
+#ifdef CRUISE_CONTROL
+  Cruise_Control *cruise_control = new Cruise_Control();
+#endif
+
+#ifdef DRIVER_ASSIST
+  void use_driver_assist() {
+#ifdef COLLISION_CONTROL
+    thread collision_control_thread(use_collision_control, this);
+#endif
+
+#ifdef COLLISION_CONTROL
+    collision_control_thread.join();
+#endif
+  }
+#endif
+
+#ifdef COLLISION_CONTROL
+  static void use_collision_control(Car *car) {
+    while (!Collision_Control::collided(car->position_x)) {
+      if (Collision_Control::close_obstacle(car->position_x, car->speed,
+                                            car->max_break_acc)) {
+#ifdef CRUISE_CONTROL
+        car->cruise_control->turnoff();
+#endif
+        car->give_warning("Obstacle dangerously close. Brake now.");
+      }
+    }
+  }
+#endif
+
+#ifdef CRUISE_CONTROL
+  static void use_cruise_control(Car *car) {
+    car->give_gas(car->cruise_control->get_gas_power(car->determine_drag_acc(),
+                                                     car->max_acc));
+  }
+#endif
+
 public:
-  // acceleration taken as reference from
-  // https://copradar.com/chapts/references/acceleration.html
-  const double max_break_acc = 9.8;
-
-  // 100 km in 5 sec --> 20km in 1 sec acceleration
-  const double max_acc = 5.6;
-
-  // just took a gues
-  const double drag_acc = 1.2;
-
-  // max speed 250 kmph --> 69.445mps
-  const double max_speed = 69.5;
-
   Car(string model, int year) {
     this->model = model;
     this->year = year;
@@ -81,39 +107,20 @@ public:
 #endif
   }
 
-  static double mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
-
   double get_speed() { return mpsec_to_kmph(this->speed); }
-
   string get_model() { return this->model; }
-
   int get_year() { return this->year; }
-
   char get_transmission_mode() { return this->transition_mode; }
-
   bool get_on() { return this->on; }
-
   double get_position_x() { return this->position_x; }
 
-  bool toggle_cruise_control() {
-    if (this->transition_mode != 'd') {
-      give_warning("Cruise Control can only be toggled in drive mode");
-    } else {
-      this->cruise_control_on = this->cruise_control_on ? false : true;
-    }
-    return this->cruise_control_on;
-  }
-
-  void apply_cruise_control(double unit_time_sec) {
-    accelerate(1, this->deterimine_dir_travel(), false,
-               this->determine_drag_acc(), unit_time_sec);
-  }
+  static double mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
 
   void move_car() {
-    thread driver_assist_thread(driver_assist, this);
-    while (!this->collided()) {
-      const double unit_time_sec = 5.0 / 1000;
-
+#ifdef COLLISION_CONTROL
+    use_driver_assist();
+#endif
+    while (true) {
       this->position_x += this->speed * unit_time_sec;
       this_thread::sleep_for(chrono::milliseconds((int)(unit_time_sec * 1000)));
 
@@ -121,17 +128,20 @@ public:
       accelerate(1, this->deterimine_dir_travel(), true, this->drag_acc,
                  unit_time_sec);
 
-      if (this->cruise_control_on) {
-        apply_cruise_control(unit_time_sec);
+#ifdef CRUISE_CONTROL
+      if (this->cruise_control->get_on()) {
+        use_cruise_control(this);
       }
+#endif
 
-      if (this->collided()) {
+#ifdef COLLISION_CONTROL
+      if (this->collision_control->collided(this->position_x)) {
         this->speed = 0;
         give_warning("You have crashed");
         break;
       }
+#endif
     }
-    driver_assist_thread.detach();
   }
 
   static void static_move_car(Car *car) { car->move_car(); }
@@ -152,7 +162,10 @@ public:
     const double brake_time = 0.5;
     accelerate(brake_power, this->deterimine_dir_travel(), true,
                this->max_break_acc, brake_time);
-    this->cruise_control_on = false;
+
+#ifdef CRUISE_CONTROL
+    this->cruise_control->turnoff();
+#endif
   }
 
   int change_transmission(int trans_desired) {
@@ -161,7 +174,11 @@ public:
     } else {
       if (this->speed == 0) {
         this->transition_mode = trans_desired;
-        this->cruise_control_on = false;
+
+#ifdef CRUISE_CONTROL
+        this->cruise_control->turnoff();
+#endif
+
       } else {
         give_warning(
             "You cannot change the transmission when the car is moving");
@@ -187,22 +204,16 @@ public:
     return this->on;
   }
 
-  // #ifdef SPEAKER
-  //   static void speaker_warning(string warning_msg) {
-  //     string espeak_cmd = "espeak \'warning " + warning_msg + '\'';
-  //     system(espeak_cmd.c_str());
-  //   }
-
-  // #endif
-
   void give_warning(string warning_msg) {
     // cout << warning_msg << '\n';
 #ifdef SPEAKER
     // give_speaker_warning(warning_msg);
-    Speaker_Use *audio_warning =
-        new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning,
-                        &Speaker_Use::kill_speaker_warning);
-    this->speaker->add_use(audio_warning);
+    // Speaker_Use *audio_warning =
+    // new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning,
+    // &Speaker_Use::kill_speaker_warning);
+    this->speaker->add_use(true, warning_msg,
+                           &Speaker_Use::give_speaker_warning,
+                           &Speaker_Use::kill_speaker_warning);
 #endif
   }
 
@@ -214,11 +225,17 @@ public:
     cout << "Year: " << this->year << '\n';
     cout << "On: " << this->get_on() << '\n';
     cout << "Transmission: " << this->get_transmission_mode() << '\n';
-    cout << "Cruise control: " << this->cruise_control_on << '\n';
+#ifdef CRUISE_CONTROL
+    cout << "Cruise control: " << this->cruise_control->get_on() << '\n';
+#endif
     cout << '\n';
     cout << "Speed: " << this->get_speed() << '\n';
     cout << "Position x: " << this->position_x << '\n';
-    cout << "Distance to Obstacle: " << this->get_dist_obstacle() << ' '
+
+#ifdef COLLISION_CONTROL
+    cout << "Distance to Obstacle: "
+         << Collision_Control::get_dist_obstacle(this->position_x) << ' '
          << "meters" << '\n';
+#endif
   }
 };

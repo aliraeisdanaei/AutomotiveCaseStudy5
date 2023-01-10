@@ -52,14 +52,4 @@ public:
         abs((0 - speed_met_sec * speed_met_sec) / (2 * max_break_acc));
     return dist_needed > dist;
   }
-
-  static void collision_control(Car *car) {
-    while (!Collision_Control::collided(car->position_x)) {
-      if (Collision_Control::close_obstacle(car->position_x, car->speed,
-                                            car->max_break_acc)) {
-        car->cruise_control_on = false;
-        car->give_warning("Obstacle dangerously close. Brake now.");
-      }
-    }
-  }
 };

@@ -16,6 +16,10 @@
 // #include "Driver_Assist/collision_control.h"
 #endif
 
+#ifndef CRUISE_CONTROL
+#define CRUISE_CONTROL
+#endif
+
 #ifndef SPEAKER
 #define SPEAKER
 // #include "Speaker/speaker.h"

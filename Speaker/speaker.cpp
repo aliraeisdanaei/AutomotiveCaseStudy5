@@ -20,17 +20,17 @@ void Speaker::set_current_use(Speaker_Use *use) {
 
 bool Speaker::add_use(Speaker_Use *use) {
   cout << "Add use++ " << use->get_name() << endl;
-  if (!this->lock) {
-    // no lock is on
+  if (!this->locked) {
+    // no locked is on
 
-    // only close lock when critical priority
-    this->lock = use->get_critical_priority() ? true : false;
+    // only close locked when critical priority
+    this->locked = use->get_critical_priority() ? true : false;
     // TODO kill all other usages
     this->set_current_use(use);
-    this->lock = false;
+    this->locked = false;
     return true;
   } else {
-    // lock is on
+    // locked is on
 
     if (use->get_critical_priority()) {
       // critical use

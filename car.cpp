@@ -7,7 +7,6 @@
 
 using namespace std;
 
-
 /**
  * double rate (0, 1] the level of power to accelarate the car forward for
  * 0.5s

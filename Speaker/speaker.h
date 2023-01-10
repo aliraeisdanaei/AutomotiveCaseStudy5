@@ -15,8 +15,8 @@ using namespace std;
 
 class Speaker {
 private:
-  // true iff locked
-  bool lock;
+  // true iff lockeded
+  bool locked;
   Speaker_Use *current_use = (Speaker_Use *)malloc(sizeof(Speaker_Use));
   thread *current_use_thread = (thread *)malloc(sizeof(thread));
 
@@ -24,7 +24,7 @@ private:
   bool add_use(Speaker_Use *use);
 
 public:
-  Speaker() { this->lock = false; }
+  Speaker() { this->locked = false; }
 
   ~Speaker() {
     delete this->current_use;
