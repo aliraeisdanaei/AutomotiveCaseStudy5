@@ -10,6 +10,7 @@
 using namespace std;
 
 #include "car.h"
+#include "configuration.h"
 
 void disable_terminal() {
   struct termios info;
@@ -68,7 +69,10 @@ void driving_input(Car *car) {
         car->change_transmission('r');
         break;
       case 'c':
-        // car->toggle_cruise_control();
+#ifdef CRUISE_CONTROL
+        car->cruise_control->toggle_cruise_control(car->get_transmission_mode(),
+                                                   car->get_speed());
+#endif
         break;
       case ' ':
         car->brake(1);

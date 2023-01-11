@@ -15,9 +15,10 @@ void Car::accelerate(double rate, bool forward, bool brake, double max,
                      double accel_time) {
   if ((this->transition_mode == 'p' || this->transition_mode == 'n') &&
       !brake) {
-    give_warning("You cannot accelerate when the car is parked or in neutral");
+    give_warning("You cannot accelerate when the car is parked or in neutral",
+                 1);
   } else if (!(0 < rate && rate <= 1)) {
-    give_warning("The power has to be in (0, 1]");
+    give_warning("The power has to be in (0, 1]", 1);
   } else {
     double accel = forward ? max * rate : -1 * max * rate;
     double delta_speed = accel * accel_time;

@@ -1,6 +1,4 @@
 #ifndef CONFIGURATION
-#define CONFIGURATION
-#endif
 
 #ifndef CAR
 #define CAR
@@ -29,4 +27,7 @@
 #ifndef MUSIC_PLAYER
 #define MUSIC_PLAYER
 // #include "Music_Player/music_player.h"
+#endif
+
+#define CONFIGURATION
 #endif

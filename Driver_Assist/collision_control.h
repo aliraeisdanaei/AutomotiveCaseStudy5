@@ -26,7 +26,7 @@ public:
   ~Collision_Control() {}
 
   static double get_pos_obstacle() {
-    const double obstacle_position = 700;
+    const double obstacle_position = 500;
     return obstacle_position;
   }
 

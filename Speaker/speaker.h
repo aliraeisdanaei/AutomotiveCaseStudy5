@@ -21,6 +21,7 @@ private:
   thread *current_use_thread = (thread *)malloc(sizeof(thread));
 
   void set_current_use(Speaker_Use *use);
+  void unset_current_use(Speaker_Use *use);
   bool add_use(Speaker_Use *use);
 
 public:
@@ -34,11 +35,10 @@ public:
   /**
    * Returns true iff the use was added onto the speaker
    */
-  bool add_use(bool critical_priority, string name, use_func_type use_func,
+  bool add_use(uint priority, string name, use_func_type use_func,
                kill_func_type kill_func) {
 
-    Speaker_Use *use =
-        new Speaker_Use(critical_priority, name, use_func, kill_func);
+    Speaker_Use *use = new Speaker_Use(priority, name, use_func, kill_func);
     return add_use(use);
   }
 };

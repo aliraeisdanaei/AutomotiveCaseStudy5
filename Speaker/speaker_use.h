@@ -2,6 +2,7 @@
 #include <iostream>
 #include <list>
 #include <string>
+#include <sys/types.h>
 #include <thread>
 #include <unistd.h>
 
@@ -15,15 +16,15 @@ typedef void (*kill_func_type)();
 
 class Speaker_Use {
 private:
-  bool critical_priority;
+  uint priority;
   string name;
   use_func_type use_func;
   kill_func_type kill_func;
 
 public:
-  Speaker_Use(bool critical_priority, string name, use_func_type use_func,
+  Speaker_Use(uint priority, string name, use_func_type use_func,
               kill_func_type kill_func) {
-    this->critical_priority = critical_priority;
+    this->priority = priority;
     this->name = name;
     this->use_func = use_func;
     this->kill_func = kill_func;
@@ -31,7 +32,7 @@ public:
 
   ~Speaker_Use() { delete &name; }
 
-  bool get_critical_priority() { return this->critical_priority; }
+  uint get_priority() { return this->priority; }
   string get_name() { return this->name; }
   use_func_type get_use_func() { return this->use_func; }
   kill_func_type get_kill_func() { return this->kill_func; }

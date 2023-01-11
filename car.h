@@ -39,6 +39,8 @@ private:
   int year;
 
   static constexpr double unit_time_sec = 5.0 / 1000;
+  static constexpr double accel_time = 0.5;
+
   const double max_break_acc = 9.8;
   const double max_acc = 5.6; // 100 km in 5 sec --> 20km in 1 sec acceleration
   const double max_speed = 69.5; // max speed 250 kmph --> 69.445mps
@@ -49,8 +51,30 @@ private:
   bool deterimine_dir_travel();
   double determine_drag_acc();
 
+#ifdef COLLISION_CONTROL
+  static void use_collision_control(Car *car) {
+    while (!Collision_Control::collided(car->position_x)) {
+      if (Collision_Control::close_obstacle(car->position_x, car->speed,
+                                            car->max_break_acc)) {
+#ifdef CRUISE_CONTROL
+        car->cruise_control->turnoff();
+#endif
+        car->give_warning("Obstacle dangerously close. Brake now.", 2);
+      }
+    }
+  }
+#endif
+
+#ifdef CRUISE_CONTROL
+  static void use_cruise_control(Car *car) {
+    car->give_gas(car->cruise_control->get_gas_power(car->determine_drag_acc(),
+                                                     car->max_acc),
+                  unit_time_sec);
+  }
+#endif
+
+public:
 #ifdef SPEAKER
-  // Speaker *speaker = (Speaker *)malloc(sizeof(Speaker));
   Speaker *speaker = new Speaker();
 #endif
 
@@ -62,40 +86,6 @@ private:
   Cruise_Control *cruise_control = new Cruise_Control();
 #endif
 
-#ifdef DRIVER_ASSIST
-  void use_driver_assist() {
-#ifdef COLLISION_CONTROL
-    thread collision_control_thread(use_collision_control, this);
-#endif
-
-#ifdef COLLISION_CONTROL
-    collision_control_thread.join();
-#endif
-  }
-#endif
-
-#ifdef COLLISION_CONTROL
-  static void use_collision_control(Car *car) {
-    while (!Collision_Control::collided(car->position_x)) {
-      if (Collision_Control::close_obstacle(car->position_x, car->speed,
-                                            car->max_break_acc)) {
-#ifdef CRUISE_CONTROL
-        car->cruise_control->turnoff();
-#endif
-        car->give_warning("Obstacle dangerously close. Brake now.");
-      }
-    }
-  }
-#endif
-
-#ifdef CRUISE_CONTROL
-  static void use_cruise_control(Car *car) {
-    car->give_gas(car->cruise_control->get_gas_power(car->determine_drag_acc(),
-                                                     car->max_acc));
-  }
-#endif
-
-public:
   Car(string model, int year) {
     this->model = model;
     this->year = year;
@@ -118,8 +108,9 @@ public:
 
   void move_car() {
 #ifdef COLLISION_CONTROL
-    use_driver_assist();
+    thread collision_control_thread(use_collision_control, this);
 #endif
+
     while (true) {
       this->position_x += this->speed * unit_time_sec;
       this_thread::sleep_for(chrono::milliseconds((int)(unit_time_sec * 1000)));
@@ -137,7 +128,8 @@ public:
 #ifdef COLLISION_CONTROL
       if (this->collision_control->collided(this->position_x)) {
         this->speed = 0;
-        give_warning("You have crashed");
+        give_warning("You have crashed", 3);
+        collision_control_thread.join();
         break;
       }
 #endif
@@ -146,17 +138,17 @@ public:
 
   static void static_move_car(Car *car) { car->move_car(); }
 
-  void give_gas(double gas_power) {
-    const double accel_time = 0.5;
+  void give_gas(double gas_power, double accel_time) {
     if (this->transition_mode == 'd') {
       accelerate(gas_power, true, false, this->max_acc, accel_time);
     } else if (this->transition_mode == 'r') {
       accelerate(gas_power, false, false, this->max_acc, accel_time);
     } else {
       give_warning(
-          "You cannot give gas when you are not in drive or in reverse");
+          "You cannot give gas when you are not in drive or in reverse", 1);
     }
   }
+  void give_gas(double gas_power) { give_gas(gas_power, Car::accel_time); }
 
   void brake(double brake_power) {
     const double brake_time = 0.5;
@@ -170,7 +162,8 @@ public:
 
   int change_transmission(int trans_desired) {
     if (!this->on) {
-      give_warning("You cannot change the transmission when the car is not on");
+      give_warning("You cannot change the transmission when the car is not on",
+                   1);
     } else {
       if (this->speed == 0) {
         this->transition_mode = trans_desired;
@@ -181,7 +174,7 @@ public:
 
       } else {
         give_warning(
-            "You cannot change the transmission when the car is moving");
+            "You cannot change the transmission when the car is moving", 1);
       }
     }
     return this->transition_mode;
@@ -194,24 +187,23 @@ public:
 
   bool turnoff() {
     if (this->speed != 0) {
-      string warning = "Cannot turn off car when speed is greater than 0";
-      give_warning(warning);
+      give_warning("Cannot turn off car when speed is greater than 0", 1);
     } else if (this->transition_mode != 'p') {
-      give_warning("You cannot turn off the car when you are not in park");
+      give_warning("You cannot turn off the car when you are not in park", 1);
     } else {
       this->on = false;
     }
     return this->on;
   }
 
-  void give_warning(string warning_msg) {
+  void give_warning(string warning_msg, uint priority) {
     // cout << warning_msg << '\n';
 #ifdef SPEAKER
     // give_speaker_warning(warning_msg);
     // Speaker_Use *audio_warning =
     // new Speaker_Use(true, warning_msg, &Speaker_Use::give_speaker_warning,
     // &Speaker_Use::kill_speaker_warning);
-    this->speaker->add_use(true, warning_msg,
+    this->speaker->add_use(priority, warning_msg,
                            &Speaker_Use::give_speaker_warning,
                            &Speaker_Use::kill_speaker_warning);
 #endif

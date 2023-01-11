@@ -28,16 +28,16 @@ public:
   bool get_on() { return this->on; }
   void turnoff() { this->on = false; }
 
-  bool toggle_cruise_control(char transition_mode) {
-    if (transition_mode != 'd') {
-      return false;
-    } else {
+  void toggle_cruise_control(char transition_mode, double speed_kmph) {
+    if (transition_mode == 'd' && speed_kmph >= 20) {
       this->on = this->on ? false : true;
     }
-    return true;
   }
 
   static double get_gas_power(double drag_acc, double max_acc) {
+    // acc = max*rate - drag_acc
+    // max*rate = drag_acc
+    // cout << drag_acc / max_acc << endl;
     return drag_acc / max_acc;
   }
 };
