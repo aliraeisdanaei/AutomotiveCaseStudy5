@@ -21,7 +21,7 @@ private:
   thread *current_use_thread = (thread *)malloc(sizeof(thread));
 
   void set_current_use(Speaker_Use *use);
-  void unset_current_use(Speaker_Use *use);
+  void unset_current_use();
   bool add_use(Speaker_Use *use);
 
 public:

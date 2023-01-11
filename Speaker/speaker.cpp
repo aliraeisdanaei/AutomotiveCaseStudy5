@@ -13,18 +13,19 @@ void Speaker::set_current_use(Speaker_Use *use) {
   use_func_type use_func = use->get_use_func();
   string use_name = use->get_name();
   use_func(use_name);
-  thread tmp_thread = (thread(use_func, use_name));
-  this->current_use_thread = &tmp_thread;
-  this->current_use_thread->join();
+  // thread tmp_thread = (thread(use_func, use_name));
+  // this->current_use_thread = &tmp_thread;
+  // this->current_use_thread->join();
 }
 
-void Speaker::unset_current_use(Speaker_Use *use) {
-  kill_func_type kill_func = use->get_kill_func();
+void Speaker::unset_current_use() {
+  kill_func_type kill_func = this->current_use->get_kill_func();
   kill_func();
+  this->locked = false;
 }
 
 bool Speaker::add_use(Speaker_Use *use) {
-  // cout << "Add use++ " << use->get_name() << endl;
+  cout << "Add use++ " << use->get_name() << endl;
   if (!this->locked) {
     // no locked is on
 
@@ -43,17 +44,19 @@ bool Speaker::add_use(Speaker_Use *use) {
       cout << "both critical" << '\n';
       if (this->current_use->get_name() == use->get_name()) {
         // we are trying to give the same warning
+        cout << "Same Warning" << endl;
         return false;
       } else if (use->get_priority() > this->current_use->get_priority()) {
         // we have higher priority, so we will unlock
+        cout << "We have higher priority we will kill" << endl;
 
         // kill all other usage
-        this->unset_current_use(use);
+        this->unset_current_use();
 
-        this->locked = false;
+        return add_use(use);
       } else {
         // wait for the other to finish
-        // cout << "waiting for the other one" << endl;
+        cout << "waiting for the other one" << endl;
         sleep(1);
         return add_use(use);
       }
