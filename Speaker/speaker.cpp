@@ -12,10 +12,10 @@ void Speaker::set_current_use(Speaker_Use *use) {
 
   use_func_type use_func = use->get_use_func();
   string use_name = use->get_name();
-  use_func(use_name);
-  // thread tmp_thread = (thread(use_func, use_name));
-  // this->current_use_thread = &tmp_thread;
-  // this->current_use_thread->join();
+  // use_func(use_name);
+  thread tmp_thread = (thread(use_func, use_name));
+  this->current_use_thread = &tmp_thread;
+  this->current_use_thread->join();
 }
 
 void Speaker::unset_current_use() {
@@ -26,33 +26,25 @@ void Speaker::unset_current_use() {
 
 bool Speaker::add_use(Speaker_Use *use) {
   cout << "Add use++ " << use->get_name() << endl;
-  if (!this->locked) {
-    // no locked is on
-
-    // only close locked when critical priority
-    this->locked = use->get_priority() > 0 ? true : false;
-
+  if (!this->locked) { // no locked is on
+    // this->locked = use->get_priority() > 0 ? true : false;
+    this->locked = true;
+    cout << "Locked" << endl;
     this->set_current_use(use);
-
+    cout << "unLocked" << endl;
     this->locked = false;
     return true;
-  } else {
-    // locked is on
-
+  } else { // locked is on
     if (use->get_priority() > 0) {
       // critical use
-      cout << "both critical" << '\n';
+      cout << "critical" << '\n';
       if (this->current_use->get_name() == use->get_name()) {
         // we are trying to give the same warning
         cout << "Same Warning" << endl;
         return false;
       } else if (use->get_priority() > this->current_use->get_priority()) {
-        // we have higher priority, so we will unlock
         cout << "We have higher priority we will kill" << endl;
-
-        // kill all other usage
         this->unset_current_use();
-
         return add_use(use);
       } else {
         // wait for the other to finish
@@ -60,6 +52,11 @@ bool Speaker::add_use(Speaker_Use *use) {
         sleep(1);
         return add_use(use);
       }
+    } else if (this->current_use->get_priority() == 0 &&
+               use->get_priority() == 0) {
+      cout << "Both Non-critical" << endl;
+      this->unset_current_use();
+      return add_use(use);
     }
   }
   return false;

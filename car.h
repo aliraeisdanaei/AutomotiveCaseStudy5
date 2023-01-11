@@ -25,6 +25,10 @@
 #include "Driver_Assist/cruise_control.h"
 #endif
 
+#ifdef MUSIC_PLAYER
+#include "Music_Player/music_player.h"
+#endif
+
 using namespace std;
 
 class Car {
@@ -51,6 +55,22 @@ private:
   bool deterimine_dir_travel();
   double determine_drag_acc();
 
+#ifdef SPEAKER
+  Speaker *speaker = new Speaker();
+#endif
+
+#ifdef COLLISION_CONTROL
+  Collision_Control *collision_control = new Collision_Control();
+#endif
+
+#ifdef CRUISE_CONTROL
+  Cruise_Control *cruise_control = new Cruise_Control();
+#endif
+
+#ifdef MUSIC_PLAYER
+  Music_Player *music_player = new Music_Player();
+#endif
+
 #ifdef COLLISION_CONTROL
   static void use_collision_control(Car *car) {
     while (!Collision_Control::collided(car->position_x)) {
@@ -74,18 +94,6 @@ private:
 #endif
 
 public:
-#ifdef SPEAKER
-  Speaker *speaker = new Speaker();
-#endif
-
-#ifdef COLLISION_CONTROL
-  Collision_Control *collision_control = new Collision_Control();
-#endif
-
-#ifdef CRUISE_CONTROL
-  Cruise_Control *cruise_control = new Cruise_Control();
-#endif
-
   Car(string model, int year) {
     this->model = model;
     this->year = year;
@@ -105,6 +113,23 @@ public:
   double get_position_x() { return this->position_x; }
 
   static double mpsec_to_kmph(double mpsec) { return mpsec * 3.6; }
+
+#ifdef CRUISE_CONTROL
+  void toggle_cruise_control() {
+    this->cruise_control->toggle_cruise_control(this->transition_mode,
+                                                this->get_speed());
+  }
+#endif
+
+#ifdef MUSIC_PLAYER
+  void play_music() {
+    cout << "play music" << endl;
+#ifdef SPEAKER
+    this->speaker->add_use(0, music_player->song1, music_player->play_mpv,
+                           music_player->kill_mpv);
+#endif
+  }
+#endif
 
   void move_car() {
 #ifdef COLLISION_CONTROL

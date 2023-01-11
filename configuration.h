@@ -22,11 +22,12 @@
 #define SPEAKER
 // #include "Speaker/speaker.h"
 // #include "Speaker/speaker_use.h"
-#endif
 
 #ifndef MUSIC_PLAYER
 #define MUSIC_PLAYER
 // #include "Music_Player/music_player.h"
+#endif
+
 #endif
 
 #define CONFIGURATION

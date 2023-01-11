@@ -70,12 +70,14 @@ void driving_input(Car *car) {
         break;
       case 'c':
 #ifdef CRUISE_CONTROL
-        car->cruise_control->toggle_cruise_control(car->get_transmission_mode(),
-                                                   car->get_speed());
+        car->toggle_cruise_control();
 #endif
         break;
       case ' ':
         car->brake(1);
+        break;
+      case 'm':
+        car->play_music();
         break;
 
       default:
