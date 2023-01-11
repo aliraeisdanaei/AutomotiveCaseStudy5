@@ -21,7 +21,9 @@ public:
 
   static void play_mpv(string mp3_filename) {
     // string play_mpv_cmd = "mpv --really-quiet \'" + mp3_filename + "\' ";
-    string play_mpv_cmd = "mpv --no-terminal \'" + mp3_filename + "\' ";
+    // string play_mpv_cmd = "mpv --no-terminal --really-quiet \'" +
+    // mp3_filename + "\' > tmp.o";
+    string play_mpv_cmd = "mpv --really-quiet \'" + mp3_filename + "\'";
     system(play_mpv_cmd.c_str());
   }
 
