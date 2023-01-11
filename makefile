@@ -23,3 +23,6 @@ run:
 
 clean:
 	rm *.o
+
+all:
+	make && make run; make clean && clear
